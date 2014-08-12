@@ -1,4 +1,5 @@
 import evolmap
+import notung_gl_tree
 import pandas as pd
 import dendropy
 import copy
@@ -15,8 +16,8 @@ class AncGenome:
 		
 	def load_evolmap(self,file_list,tree_file,format='newick'):
 		'''
-		Load ancestor counts from several EvolMap analyses. Populates 
-		variable self.node_counts.
+		Load node counts from several EvolMap analyses. Populates 
+		variable self.node_counts and self.tree
 		
 		file_list: A python list of ancestor_results files to load from
 		tree_file: Tree file with labeled nodes. Must have all the taxa
@@ -24,6 +25,17 @@ class AncGenome:
 		'''
 		self.node_count,self.tree = \
 		evolmap.count_df(file_list,tree_file,False,format)
+		
+	def load_notung(self,info_files,tree_file,format='newick'):
+		'''
+		Load node counts from Notung .info files. Populates self.node_counts
+		and self.tree.
+		
+		info_files: python list of .info files. Must start with: "GeneName_"
+		tree_file: Tree file with labeled nodes. Can specify format.
+		'''
+		self.node_count, self.tree = \
+		notung_gl_tree.batch_copy_num(info_files,tree_file,format)
 		
 	def normalize(self):
 		'''
@@ -59,7 +71,11 @@ class AncGenome:
 		
 		
 	def gl_branches(self,gene,kind='gain'):
-		''''''
+		'''
+		Create and return dendropy Tree object whose branches are 
+		proportional to gene gain or loss. Can choose three types:
+			kind = "gain" or "loss" or "foldloss"
+		'''
 		tree = copy.deepcopy(self.tree)
 		for node in tree.preorder_node_iter():
 			if node.parent_node==None:	# EvolMap doesn't have counts for 
@@ -83,3 +99,26 @@ class AncGenome:
 					raise Exception("Node %s not found in node counts" 
 										% (node.label))
 		return tree
+		
+	def path_df(self,taxon,tree_file=None,format='newick'):
+		'''Return a DataFrame of channel counts for the path from root
+		to specified taxon. Can be plotted as a line graph to show the mode
+		of duplication and loss.'''
+		if tree_file:
+			tree = dendropy.Tree.get_from_path(tree_file, format)
+		else:
+			tree = self.tree
+		taxon_node = tree.find_node_with_taxon_label(taxon)
+		path_df = pd.DataFrame(columns=self.node_count.columns)
+		path = [i for i in taxon_node.ancestor_iter()]
+		path.reverse()
+		for node in path:
+			if node.label and node.parent_node != None:
+				path_df = path_df.append(self.node_count.ix[node.label])
+			elif node.taxon:
+				path_df = path_df.append(self.node_count.ix[str(node.taxon)])
+			elif node.parent_node == None:
+				continue
+			else:
+				raise Exception("Tree has unlabeled nodes")
+		return path_df

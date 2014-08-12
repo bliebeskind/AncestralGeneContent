@@ -79,40 +79,40 @@ def copy_number(tree_file,info_file,format='newick'):
 			if is_first:
 				count = 1 + gl_D[name][0] + gl_D[name][1]
 				node_counts[name] = count
-				node.label = str(count)
 				is_first = False
 			else:
-				count = int(node.parent_node.label) \
-				+ gl_D[name][0] + gl_D[name][1]
-				node_counts[name] = count
-				node.label = str(count)
+				try:
+					count = int(node_counts[node.parent_node.label]) \
+					+ gl_D[name][0] + gl_D[name][1]
+					node_counts[name] = count
+				except:
+					return node_counts
 		else: # node not in info file, hence not in gene tree
 			if node.parent_node == None or node.is_leaf(): # node is root or leaf
 				node_counts[name] = 0
-				node.label = "0"
 			else:
 				if has_descendents(node,gl_D):
-					count = node.parent_node.label
-					node_counts[node.label] = str(count)
-					node.label = count
+					count = node_counts[node.parent_node.label]
+					node_counts[name] = str(count)
 				else:
 					node_counts[name] = 0
-					node.label = "0"
-	return tree, node_counts
+	return node_counts, tree
 	
-def batch_copy_num(info_files,species_tree,write_trees=False,format='newick'):
+def batch_copy_num(info_files,species_tree,format='newick'):
+	'''
+	Construct and return pandas DataFrame from a list of Notung .info files.
+	Frame will be Gene x Nodes. Info files should start with the gene name 
+	separated from the rest of the file name by an underscore:
+		Gene1_tree.nhx.rooting.0.info
+	'''
 	count_D = {}
 	for f in info_files:
 		gene = f.strip().split("_")[0]
 		sys.stderr.write("Processing %s\n" % gene)
 		try:
-			annot_tree,node_counts = copy_number(species_tree,f,format)
+			node_counts, tree = copy_number(species_tree,f,format)
 			count_D[gene] = node_counts
 		except IOError:
 			raise Exception("Species tree or info_file not found")
-		if write_trees:
-			outfile = gene + "_Stree.nhx"
-			annot_tree.write_to_path(outfile,'newick',
-				suppress_leaf_node_labels=False)
-	return pd.DataFrame(count_D)
+	return pd.DataFrame(count_D).astype("float"),tree
 			
