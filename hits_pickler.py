@@ -105,8 +105,11 @@ def print_summary(D):
 		
 if __name__ == '__main__':
 	import cPickle as pickle
-	infile, outfile = sys.argv[1], sys.argv[2]
-	file_list = file_list_from_infile(infile)
-	D = hits_D_from_files(file_list, .01)
-	print_summary(D)
-	pickle.dump(D, open(outfile, "wb"))
+	try:
+		infile, outfile = sys.argv[1], sys.argv[2]
+		file_list = file_list_from_infile(infile)
+		D = hits_D_from_files(file_list, .01)
+		print_summary(D)
+		pickle.dump(D, open(outfile, "wb"))
+	except IndexError:
+		print "Usage: hits_pickler <table_file_list> <outfile>"

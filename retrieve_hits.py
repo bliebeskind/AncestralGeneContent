@@ -59,22 +59,23 @@ def hits_from_files(D,path_to_fastas=None):
 	return sorted(all_hits)
 	
 if __name__ == '__main__':
-	infile = sys.argv[1]
-	outfile = sys.argv[2]
+	Usage = "retriev_hits.py <pickled_hits> <outfile> <path_to_fastas>"
 	try:
+		infile = sys.argv[1]
+		outfile = sys.argv[2]
 		path_to_fastas = sys.argv[3]
+		pickled_hits = get_pickled_hits(infile)
+		species = 0
+		hits = 0
+		for k in pickled_hits.keys():
+			species +=1
+			hits += len(pickled_hits[k].keys())
+		sys.stderr.write("%i total species\n" % species)
+		sys.stderr.write("%i total hits\n" % hits)
+		if path_to_fastas:
+			all_hits = hits_from_files(pickled_hits,path_to_fastas)
+		assert len(all_hits) == hits
+		sys.stderr.write("Found all the hits!\n")
+		SeqIO.write(all_hits,outfile,'fasta')
 	except IndexError:
-		path_to_fastas = None
-	pickled_hits = get_pickled_hits(infile)
-	species = 0
-	hits = 0
-	for k in pickled_hits.keys():
-		species +=1
-		hits += len(pickled_hits[k].keys())
-	sys.stderr.write("%i total species\n" % species)
-	sys.stderr.write("%i total hits\n" % hits)
-	if path_to_fastas:
-		all_hits = hits_from_files(pickled_hits,path_to_fastas)
-	assert len(all_hits) == hits
-	sys.stderr.write("Found all the hits!\n")
-	SeqIO.write(all_hits,outfile,'fasta')
+		print Usage
