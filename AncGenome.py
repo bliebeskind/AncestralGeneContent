@@ -122,3 +122,10 @@ class AncGenome:
 			else:
 				raise Exception("Tree has unlabeled nodes")
 		return path_df
+		
+	def rename_nodecount_index(self,rename_dict):
+		'''Rename the indices of self.node_count using an input dictionary
+		mapping old names to new names.'''
+		new = self.node_count.T
+		new = new.rename(columns = rename_dict)
+		self.node_count = new.T
